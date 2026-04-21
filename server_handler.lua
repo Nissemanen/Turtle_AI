@@ -1,7 +1,11 @@
-local config = require("config")
+local host = input("host: ")
+
+if host == "" then
+    host = "ws://192.168.1.188:8765"
+end
 
 print("Connecting...")
-local ws, err = http.websocket(config.host)
+local ws, err = http.websocket(host)
 
 if not ws then
     print("Failed to connect: ".. tostring(err))
