@@ -4,7 +4,7 @@ import asyncio, websockets
 import json
 import log
 
-SERVER_VERSION = "0.3.1"
+SERVER_VERSION = "0.0.1"
 SERVER_CAPABILITIES = []
 
 
@@ -54,12 +54,13 @@ async def init_handler(on_request, websocket: websockets.ServerConnection):
         if msg.get("type") == "ping":
             await websocket.send(json.dumps({"type": "pong"}))
         
-        elif msg.get("type") == "request":
+        elif msg.get("type") == "tick":
             await websocket.send(str(on_request(msg, session)))
         
         else:
             log.info(f"Unknown message type: {msg.get("type")}")
             await websocket.send(f"Unknown message type: {msg.get("type")}")
+
 
 async def start(on_request:Callable[dict, dict], host:str = "0.0.0.0", port: int=8765):
     handler = partial(init_handler, on_request)
