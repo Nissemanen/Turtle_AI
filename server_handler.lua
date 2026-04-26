@@ -1,82 +1,70 @@
-local host = read("host: ")
+return {
+    ---Try connect to the server using special handshake
+    ---@param host string
+---@diagnostic disable-next-line: undefined-doc-name
+    ---@return table, websocket|nil
+    try_connect= function (host, capabilities)
+        print("Connecting to "..host)
 
-if host == "" then
-    host = "ws://192.168.1.188:8765"
-end
+        local ws, err = http.websocket(host)
 
-
-
-print("Connecting...")
-local ws, err = http.websocket(host)
-
-if not ws then
-    print("Failed to connect: ".. tostring(err))
-    return
-end
-
---[[ here the handshake happens.
-this is the structure of a handshake:
-{
-    "type": "hello",  (always that, it indicates this is a handshake)
-    "capabilities": {}  (an object with the structure of "cap":["usecase1", "usecase2"] where the usecases are other types, eg "request", "ping", or more to come)
-}
-]]
-
-ws.send(textutils.serialiseJSON({
-    type = "hello",
-    capabilities = {
-        scan={"request"}
-    }
-}))
-
-
-
-local msg = ws.receive()
-local server_hello = textutils.unserialiseJSON(msg)
-
-if server_hello.type ~= "hello" then
-    print("Unexpected first message from server")
-    return
-end
-
-print("Connected")
-
-local pos = {}
-pos[1], pos[2], pos[3] = gps.locate()
-
-if #pos == 0 then
-    print("oh no")
-end
-
-
-local geoscaner = peripheral.wrap("left")
-
-while true do
-    local scan = {}
-    for i, v in ipairs(geoscaner.scan(4)) do
-        scan[i] = {
-            x = v.x,
-            y = v.y,
-            z = v.z,
-            name = v.name,
-        }
-    end
-
-    ws.send(textutils.serialiseJSON({
-        type="request",
-        surroundings=scan
-    }))
-
-    local response = ws.receive()
-
-    if response then
-        if response ~= "" then
-            local cmd = textutils.unserialiseJSON(response)
-            print("Got: "..cmd.action)
+        if not ws then
+            print("Failed to connect: "..err)
+            return {type="no connection", err=err}, nil
         end
-    else
-        print("Got nothing")
-    end
 
-    os.sleep(3)
-end
+        --[[ here the handshake happens.
+        this is the structure of a handshake:
+        {
+            "type": "hello",  (always that, it indicates this is a handshake)
+            "capabilities": {}  (an object with the structure of "cap":["usecase1", "usecase2"] where the usecases are other types, eg "request", "ping", or more to come)
+        }
+        ]]
+
+        ws.send(textutils.serialiseJSON({
+            type = "hello",
+            capabilities = capabilities
+        }))
+
+        local msg = ws.receive()
+        local server_hello = textutils.unserialiseJSON(msg)
+
+        if server_hello.type ~= "hello" then
+            print("Unexpected first message from server")
+            return server_hello, ws
+        end
+
+        print("Connected")
+        return server_hello, ws
+    end,
+
+    send_msg= function (data, ws, self, host)
+        ::continue::
+
+        local success, err = pcall(ws.send, textutils.serialiseJSON(data))
+
+        if not success then
+            print("couldnt send message to server:")
+            print(err)
+
+            if host then
+                ::retry::
+                local server_hello
+                server_hello, ws = self.try_connect(host)
+
+                if server_hello.type == "no connection" then
+                    io.write("couldn't reconnect, try again? [y/N] ")
+                    local ans = io.read()
+
+                    if ans.lower() == "y" then
+                        goto retry
+                    end
+
+                    return
+                end
+
+                goto continue
+            end
+        end
+    end
+}
