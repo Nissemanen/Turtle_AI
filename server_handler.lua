@@ -56,11 +56,11 @@ return {
                     io.write("couldn't reconnect, try again? [y/N] ")
                     local ans = io.read()
 
-                    if ans.lower() == "y" then
+                    if ans:lower() == "y" then
                         goto retry
                     end
 
-                    return
+                    os.exit()
                 end
 
                 goto continue

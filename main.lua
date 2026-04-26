@@ -8,17 +8,21 @@ if host == "" then
     host = "ws://192.168.1.188:8765"
 end
 
-local server_hello, ws = server_handler.try_connect(host, {scan={"tick"}, position={"tick"}, time={"tick"}, day={"tick"}})
+local server_hello, ws = server_handler.try_connect(host, {scan={"tick"}, position={"tick"}, time={"tick"}, day={"tick"}, facing={"tick"}})
 
 if ws == nil then return end
 
 
 local geoscaner = peripheral.wrap("left")
 local modem = peripheral.wrap("right")
+local facing = {0, 0}
+local pos = pos_handler.get_pos_by_gps()
 
 
 while true do
+    print(textutils.serialiseJSON(facing))
     local scan = {}
+
     for i, v in ipairs(geoscaner.scan(1)) do
         if not (v.x==0 and v.y==0 and v.z==0) then
             scan[i] = {
@@ -30,47 +34,56 @@ while true do
         end
     end
 
-
-
     server_handler.send_msg({
         type="tick",
-        position=pos_handler.get_pos_by_gps(),
+        position=pos,
         scan=scan,
         time=textutils.formatTime(os.time(), true),
-        day=os.day()
+        day=os.day(),
+        facing=facing
     }, ws, server_handler, host)
 
 
 
     local success, result = pcall(ws.receive)
 
-    if not success then
+    -- bro i hate this, why doesnt lua have a god damn continue word,
+    -- and why can't goto skip over creating variables?
+    -- isn't that like one of the biggest reasons why to use it? when else would it be usefull
+
+    if success then
+        if  result then
+            local unserialised = textutils.unserialiseJSON(result)
+
+            if unserialised.action then
+                modem.transmit(1, 1, unserialised.thought)
+
+                if string.find(unserialised.action, "forward") then
+                    turtle.forward()
+                    pos, facing = pos_handler:calculate_pos(pos, facing, 1, 0)
+
+                elseif string.find(unserialised.action, "back") then
+                    turtle.back()
+                    
+                    pos, facing = pos_handler:calculate_pos(pos, facing, -1, 0)
+
+                    print(textutils.serialiseJSON(facing))
+
+                elseif string.find(unserialised.action, "left") then
+                    turtle.turnLeft()
+                    pos, facing = pos_handler:calculate_pos(pos, facing, 0, -1)
+
+                elseif string.find(unserialised.action, "right") then
+                    turtle.turnRight()
+                    pos, facing = pos_handler:calculate_pos(pos, facing, 0, 1)
+                end
+            end
+        else
+            print("got nothing")
+        end
+    else
         print("connection with server lost:")
         print(result)
-        return
-    end
-
-    if not result then
-        print("got nothing")
-        return
-    end
-
-    local unserialised = textutils.unserialiseJSON(result)
-
-    if not unserialised.action then
-        return
-    end
-
-    modem.transmit(1, 1, unserialised.thought)
-
-    if string.find(unserialised.action, "forward") then
-        turtle.forward()
-    elseif string.find(unserialised.action, "back") then
-        turtle.back()
-    elseif string.find(unserialised.action, "left") then
-        turtle.turnLeft()
-    elseif string.find(unserialised.action, "right") then
-        turtle.turnRight()
     end
 
     os.sleep(3)

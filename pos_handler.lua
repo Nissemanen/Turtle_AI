@@ -55,5 +55,37 @@ return {
         if not success then
             print("couldnt ")
         end
+    end,
+
+    calculate_pos= function (self, old, facing, movement, rotation)
+        local new_pos
+        if facing[1] == 0 and facing[2]==0 then
+            new_pos = self.get_pos_by_gps()
+
+            io.write("old: ")
+            print(old)
+            io.write("new: ")
+            print(new_pos)
+
+            facing = {(new_pos[1] - old[1])*movement, (new_pos[3] - old[3])*movement}
+        end
+
+        io.write("wow: ")
+        print(textutils.serialiseJSON(facing))
+
+        if rotation ~= 0 then
+            facing = {facing[2] * -rotation, facing[1] * rotation}
+        end
+
+        if new_pos ~= nil then
+            return new_pos, facing
+        end
+
+        return {old[1] + facing[1]*movement, old[2], old[3] + facing[2]*movement}, facing
+    end,
+
+    global_to_local= function (pos, facing)
+        return {pos[1]*facing[1]-facing[2], pos[2], pos[3]*facing[1]}
     end
+
 }
