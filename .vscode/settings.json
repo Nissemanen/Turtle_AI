@@ -1,0 +1,14 @@
+{
+    "Lua.diagnostics.globals": [
+        "http",
+        "textutils",
+        "gps",
+        "turtle",
+        "peripheral",
+        "ws"
+    ],
+    "Lua.diagnostics.disable": [
+        "undefined-field",
+        "undefined-doc-name"
+    ]
+}
