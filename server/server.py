@@ -8,18 +8,6 @@ SERVER_VERSION = "0.0.1"
 SERVER_CAPABILITIES = []
 
 
-async def main_loop(websocket: websockets.ServerConnection, session: dict):
-    async for message in websocket:
-        msg = json.loads(message)
-        msg_type = msg.get("type")
-
-        if msg_type == "state":
-            pass
-
-        else:
-            log.info(f"Unknown message type: {msg_type}")
-
-
 async def init_handler(on_request, websocket: websockets.ServerConnection):
     log.info("Request handshake")
     
@@ -68,7 +56,3 @@ async def start(on_request:Callable[dict, dict], host:str = "0.0.0.0", port: int
     async with websockets.serve(handler, host, port) as serv:
         log.info(f"Server running on {host}:{port}")
         await asyncio.Future()
-
-
-if __name__ == "__main__":
-    asyncio.run(start(main_loop))

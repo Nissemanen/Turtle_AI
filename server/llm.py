@@ -37,32 +37,9 @@ def submit_action(thought: str, action: int) -> dict:
     return json.dumps({"thought": thought, "action": action})
 
 def get_action(data, session, messages):
-    facing = data.get('facing', [0, 0])
-    facing_text = 'You are currently facing east, or in other words towards the positive X' if facing[0] == 1 else 'You are currently facing west, or in other words towards the negative X' if facing[0] == -1 else 'You are currently facing south, or in other words towards the positive Z' if facing[1] == 1 else 'You are currently facing north, or in other words towards the negative Z'
-
-    if not messages:
-        messages = [{"role":"system", "content":f"""
-You are a robot living inside a Minecraft world. You are not a helpfull assistant, you are a robot that can move arround in the world and interact with blocks and players.
-
-## Surroundings
-Your surroundings will be formated as a list of JSON objects, their structure will be:
-[{'{'}"y": int (how far away the block is from you in the y axis), "x": int (how far away the block is from you in the x axis), "name": str (what type of block it is, including its namespace), "z": int (how far away the block is from you in the z axis){'}'}]
-Your curent surroundings are:
-{data.get('scan')}
-
-all blocks you can see in the list are 1 block away from your position (including diagonals).
-{facing_text}
-
----
-
-to do anything you have gotten a tool "submit_action".
-currently, you can not interract with any blocks. You can only move arround and try searching for things.
-    """.strip()}]
 
     response = ollama.chat(model="qwen3.5:latest", messages=messages, think=True, tools=[submit_action])
-
-    messages.append(response.message)
-
+    
     return response
 
 def parse_llama_message(message:str):
