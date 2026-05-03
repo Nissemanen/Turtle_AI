@@ -1,4 +1,6 @@
-import ollama, chromadb, json
+from typing import Iterator
+import ollama, chromadb
+import json
 
 client = chromadb.PersistentClient(path="./data/memory")
 collection = client.get_or_create_collection("turtle_memory")
@@ -22,22 +24,22 @@ def recall(query, n=3):
     results = collection.query(query_texts=[query], n_results=n)
     return results["documents"][0]
 
-def submit_action(thought: str, action: int) -> dict:
-    """Subbmit your actions to be done
+def submit_action(thought: str, action: int) -> str:
+    """Submit your actions to be done
 
     Args:
       thought: your current internal though (in character)
       action: an integer from 0 to 4, 0 = idle, 1 = move_forwards, 2 = move_backwards, 3 = turn_right, 4 = turn_left.
     
     Returns:
-      The results of your action
+      How the world looks now, as either a result of your action, or by Minecrafts random nature
     """
+
     action = "move_forwards" if action == 1 else "move_backwards" if action == 2 else "turn_right" if action == 3 else "turn_left" if action == 4 else "idle"
 
     return json.dumps({"thought": thought, "action": action})
 
-def get_action(data, session, messages):
-
+def get_action(messages) -> ollama.ChatResponse|Iterator[ollama.ChatResponse]:
     response = ollama.chat(model="qwen3.5:latest", messages=messages, think=True, tools=[submit_action])
     
     return response

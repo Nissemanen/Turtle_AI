@@ -21,23 +21,11 @@ local pos = pos_handler.get_pos_by_gps()
 
 while true do
     print(textutils.serialiseJSON(facing))
-    local scan = {}
-
-    for i, v in ipairs(geoscaner.scan(1)) do
-        if not (v.x==0 and v.y==0 and v.z==0) then
-            scan[i] = {
-                x = v.x,
-                y = v.y,
-                z = v.z,
-                name = v.name,
-            }
-        end
-    end
 
     server_handler.send_msg({
         type="tick",
         position=pos,
-        scan=scan,
+        scan=pos_handler.get_surroundings(geoscaner, facing, 1),
         time=textutils.formatTime(os.time(), true),
         day=os.day(),
         facing=facing
@@ -64,10 +52,7 @@ while true do
 
                 elseif string.find(unserialised.action, "back") then
                     turtle.back()
-                    
                     pos, facing = pos_handler:calculate_pos(pos, facing, -1, 0)
-
-                    print(textutils.serialiseJSON(facing))
 
                 elseif string.find(unserialised.action, "left") then
                     turtle.turnLeft()
