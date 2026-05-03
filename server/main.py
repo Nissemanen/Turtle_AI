@@ -12,9 +12,13 @@ FACING_DATA = {
     }
 messages = []
 
-async def idk_do_stuff(msg):
-    facing = data.get()
-    FACING_DATA.get(str(facing))
+async def idk_do_stuff(msg, first=False):
+    global messages
+
+    result = llm.get_action(msg)
+
+    facing = FACING_DATA.get(str(data.get('facing')))
+
 
 
 async def on_request(websocket, data, session):
